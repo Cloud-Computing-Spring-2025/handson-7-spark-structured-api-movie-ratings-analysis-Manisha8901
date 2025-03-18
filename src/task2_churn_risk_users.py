@@ -1,55 +1,48 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, count
+from pyspark.sql.functions import col, count, lit
 
-def initialize_spark(app_name="Task2_Churn_Risk_Users"):
+def create_spark_session(app_name="Churn_Risk_Analysis"):
     """
     Initialize and return a SparkSession.
     """
-    spark = SparkSession.builder \
-        .appName(app_name) \
-        .getOrCreate()
-    return spark
+    return SparkSession.builder.appName(app_name).getOrCreate()
 
-def load_data(spark, file_path):
+def read_csv_data(spark, file_path):
     """
-    Load the movie ratings data from a CSV file into a Spark DataFrame.
+    Load movie ratings data from a CSV file into a Spark DataFrame.
     """
-    schema = """
-        UserID INT, MovieID INT, MovieTitle STRING, Genre STRING, Rating FLOAT, ReviewCount INT, 
-        WatchedYear INT, UserLocation STRING, AgeGroup STRING, StreamingPlatform STRING, 
-        WatchTime INT, IsBingeWatched BOOLEAN, SubscriptionStatus STRING
-    """
-    df = spark.read.csv(file_path, header=True, schema=schema)
-    return df
+    return spark.read.option("header", True).option("inferSchema", True).csv(file_path)
 
-def identify_churn_risk_users(df):
+def detect_churn_risk_users(df):
     """
-    Identify users with canceled subscriptions and low watch time (<100 minutes).
+    Identify users who have canceled their subscription and have watch time below 100 minutes.
+    """
+    churn_risk_df = df.filter((col("SubscriptionStatus") == "Canceled") & (col("WatchTime") < 100))
+    churn_user_count = churn_risk_df.agg(count("UserID").alias("Total_Users"))
 
-    TODO: Implement the following steps:
-    1. Filter users where `SubscriptionStatus = 'Canceled'` AND `WatchTime < 100`.
-    2. Count the number of such users.
-    """
-    pass  # Remove this line after implementation
+    # Adding a descriptive label column
+    churn_user_count = churn_user_count.withColumn("Churn_Risk_Users", 
+                                                   lit("Users with low watch time & canceled subscriptions"))
 
-def write_output(result_df, output_path):
+    return churn_user_count.select("Churn_Risk_Users", "Total_Users")
+
+def save_results(df, output_path):
     """
-    Write the result DataFrame to a CSV file.
+    Save the DataFrame results as a CSV file.
     """
-    result_df.coalesce(1).write.csv(output_path, header=True, mode='overwrite')
+    df.coalesce(1).write.option("header", True).mode("overwrite").csv(output_path)
 
 def main():
     """
-    Main function to execute Task 2.
+    Execute the churn risk user identification workflow.
     """
-    spark = initialize_spark()
+    spark = create_spark_session()
+    input_file = "input/movie_ratings_data.csv"  # Adjusted file path
+    df = read_csv_data(spark, input_file)
 
-    input_file = "/workspaces/MovieRatingsAnalysis/input/movie_ratings_data.csv"
-    output_file = "/workspaces/MovieRatingsAnalysis/outputs/churn_risk_users.csv"
-
-    df = load_data(spark, input_file)
-    result_df = identify_churn_risk_users(df)  # Call function here
-    write_output(result_df, output_file)
+    # Analyze churn risk users
+    churn_risk_stats = detect_churn_risk_users(df)
+    save_results(churn_risk_stats, "Outputs/churn_risk_users.csv")
 
     spark.stop()
 

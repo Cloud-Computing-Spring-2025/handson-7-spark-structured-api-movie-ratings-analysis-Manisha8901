@@ -1,57 +1,48 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, count, round as spark_round
 
-def initialize_spark(app_name="Task1_Binge_Watching_Patterns"):
+def create_spark_session(app_name="Binge_Watching_Analysis"):
     """
     Initialize and return a SparkSession.
     """
-    spark = SparkSession.builder \
-        .appName(app_name) \
-        .getOrCreate()
-    return spark
+    return SparkSession.builder.appName(app_name).getOrCreate()
 
-def load_data(spark, file_path):
+def read_csv_data(spark, file_path):
     """
-    Load the movie ratings data from a CSV file into a Spark DataFrame.
+    Load movie ratings data from a CSV file into a Spark DataFrame.
     """
-    schema = """
-        UserID INT, MovieID INT, MovieTitle STRING, Genre STRING, Rating FLOAT, ReviewCount INT, 
-        WatchedYear INT, UserLocation STRING, AgeGroup STRING, StreamingPlatform STRING, 
-        WatchTime INT, IsBingeWatched BOOLEAN, SubscriptionStatus STRING
-    """
-    df = spark.read.csv(file_path, header=True, schema=schema)
-    return df
+    return spark.read.option("header", True).option("inferSchema", True).csv(file_path)
 
-def detect_binge_watching_patterns(df):
+def analyze_binge_watching(df):
     """
-    Identify the percentage of users in each age group who binge-watch movies.
+    Calculate the percentage of binge-watchers within each age group.
+    """
+    binge_watchers = df.filter(col("IsBingeWatched") == True)
+    binge_counts = binge_watchers.groupBy("AgeGroup").agg(count("UserID").alias("Binge_Watchers"))
+    total_users = df.groupBy("AgeGroup").agg(count("UserID").alias("Total_Users"))
 
-    TODO: Implement the following steps:
-    1. Filter users who have `IsBingeWatched = True`.
-    2. Group by `AgeGroup` and count the number of binge-watchers.
-    3. Count the total number of users in each age group.
-    4. Calculate the binge-watching percentage for each age group.
-    """
-    pass  # Remove this line after implementation
+    binge_stats = binge_counts.join(total_users, "AgeGroup")\
+        .withColumn("Percentage", spark_round((col("Binge_Watchers") / col("Total_Users")) * 100, 2))
+    
+    return binge_stats
 
-def write_output(result_df, output_path):
+def save_results(df, output_path):
     """
-    Write the result DataFrame to a CSV file.
+    Save the processed DataFrame as a CSV file.
     """
-    result_df.coalesce(1).write.csv(output_path, header=True, mode='overwrite')
+    df.coalesce(1).write.option("header", True).mode("overwrite").csv(output_path)
 
 def main():
     """
-    Main function to execute Task 1.
+    Execute the binge-watching analysis workflow.
     """
-    spark = initialize_spark()
+    spark = create_spark_session()
+    input_file = "input/movie_ratings_data.csv"  # Adjusted input path
+    df = read_csv_data(spark, input_file)
 
-    input_file = "/workspaces/MovieRatingsAnalysis/input/movie_ratings_data.csv"
-    output_file = "/workspaces/MovieRatingsAnalysis/outputs/binge_watching_patterns.csv"
-
-    df = load_data(spark, input_file)
-    result_df = detect_binge_watching_patterns(df)  # Call function here
-    write_output(result_df, output_file)
+    # Perform binge-watching analysis
+    binge_watch_stats = analyze_binge_watching(df)
+    save_results(binge_watch_stats, "Outputs/binge_watching_patterns.csv")
 
     spark.stop()
 
