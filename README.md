@@ -199,16 +199,17 @@ Determine which movies have an average watch time greater than 100 minutes and r
 - **Identify Top Movies**: List movies where the average watch time is among the highest.
 
 
-**Expected Outcome:**
+**Outcome:**
 
 A list of departments meeting the specified criteria, along with the corresponding percentages.
 
-**Example Output:**
+**Output:**
 
-| Age Group   | Binge Watchers | Percentage |
+| Age Group   | Binge Watchers | Percentage | 
 |-------------|----------------|------------|
-| Teen        | 195            | 45%        |
-| Adult       | 145            | 38%        |
+| Senior      | 17             | 50%        |
+| Teen        | 20             | 50%        |
+| Teen        | 15             | 57.69%     |
 
 ---
 
@@ -224,16 +225,16 @@ Find users who are **at risk of churn** by identifying those with **canceled sub
 - **Analyze Watch Time**: Identify users with `WatchTime < 100` minutes.  
 - **Count At-Risk Users**: Compute the total number of such users.  
 
-**Expected Outcome:**  
+**Outcome:**  
 
 A count of users who **canceled their subscriptions and had low engagement**, highlighting **potential churn risks**.
 
-**Example Output:**  
+**Output:**  
 
 
 |Churn Risk Users                                  |	Total Users |
 |--------------------------------------------------|--------------|
-|Users with low watch time & canceled subscriptions|	350         |
+|Users with low watch time & canceled subscriptions|	10          |
 
 
 
@@ -259,10 +260,12 @@ A summary of **movie-watching trends** over the years, indicating peak years for
 
 | Watched Year | Movies watched |
 |--------------|----------------|
-| 2020         | 1200           |
-| 2021         | 1500           |
-| 2022         | 2100           |
-| 2023         | 2800           |
+| 2018         | 16             |
+| 2019         | 17             |
+| 2020         | 17             |
+| 2021         | 14             |
+| 2022         | 15             |
+| 2023         | 21             |
 
 
 ---
